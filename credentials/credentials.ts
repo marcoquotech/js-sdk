@@ -133,7 +133,12 @@ export class Credentials {
    */
   private async refreshAccessToken() {
     const clientCredentials = (this.authConfig as { method: CredentialsMethod.ClientCredentials; config: ClientCredentialsConfig })?.config;
-
+    // Check if the apiTokenIssuer contains protocol prefix before forcing /oauth/token
+    const hasProtocolPrefix = /^(http|https):\/\//i.test(clientCredentials.apiTokenIssuer);
+    const url = hasProtocolPrefix 
+        ? clientCredentials.apiTokenIssuer 
+        : `https://${clientCredentials.apiTokenIssuer}/oauth/token`;
+    
     try {
       const response = await attemptHttpRequest<{
           client_id: string,
@@ -144,7 +149,7 @@ export class Credentials {
         access_token: string,
         expires_in: number,
       }>({
-        url: `https://${clientCredentials.apiTokenIssuer}/oauth/token`,
+        url,
         method: "post",
         data: {
           client_id: clientCredentials.clientId,
